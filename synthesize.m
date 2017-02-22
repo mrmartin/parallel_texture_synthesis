@@ -34,7 +34,7 @@ for l=3:levels
     Nexemplar{l}=zeros(m^2,neighbourhood^2-1,3);
     for x=1:m
         for y=1:m
-            Nexemplar{l}(sub2ind([m,m],x,y),:,:)=reshape(pixels_gaussian_blur(sub2ind([m,m],mod(X+x-1,m)+1,mod(Y+y-1,m)+1),:),[1 24 3]);
+            Nexemplar{l}(sub2ind([m,m],x,y),:,:)=reshape(pixels_gaussian_blur(sub2ind([m,m],mod(X+x-1,m)+1,mod(Y+y-1,m)+1),:),[1 neighbourhood^2-1 3]);
         end
     end
 end
@@ -45,22 +45,23 @@ end
 S=reshape([1 1],[1 1 2]);
 imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
 
-corrections = 3;
+corrections = 2;
 %jitter parameter at each level
 r=repmat(0.1,levels,1);
 
 for l=1:levels
-    pause
     S=upsample_s(S,m,l);
     S=jitter_s(S, m, r(l), l, 7);
+    imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
+    title('upsampled and jittered')
+    pause
     if(l>2)
         for c=1:corrections
-            S=correct_s(S,Nexemplar{l},pixels_in,m,l);
-            imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
-            pause
+            S=correct_s(S,Nexemplar{l},pixels_in,m);
         end
+        imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
+        title('corrected')
+        pause
     end
-    imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
 end
-pause
 close
