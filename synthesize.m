@@ -45,23 +45,23 @@ end
 S=reshape([1 1],[1 1 2]);
 imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
 
-corrections = 2;
+corrections = 3;
 %jitter parameter at each level
-r=repmat(0.1,levels,1);
+r=[0 0 0 0.05 0 0];%repmat(0.4,levels,1);
 
 for l=1:levels
     S=upsample_s(S,m,l);
     S=jitter_s(S, m, r(l), l, 7);
     imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
     title('upsampled and jittered')
-    pause
+    pause(0.5)
     if(l>2)
         for c=1:corrections
             S=correct_s(S,Nexemplar{l},pixels_in,m);
         end
         imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
         title('corrected')
-        pause
+        pause(0.5)
     end
 end
-close
+%close
