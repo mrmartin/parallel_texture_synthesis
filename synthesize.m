@@ -23,7 +23,7 @@ levels = log2(size(im_in,1));
 %precompute neighbours into convenient form at each level > 2
 neighbourhood = 5;
 
-Nexemplar = cell(levels,1);
+ Nexemplar = cell(levels,1);
 for l=3:levels
     range=m/2^l*[(neighbourhood-1)/-2:(neighbourhood-1)/2];
     [X,Y]=meshgrid(range, range);
@@ -31,8 +31,13 @@ for l=3:levels
     X=X(setdiff(1:end,neighbourhood^2/2-0.5));
     Y=Y(setdiff(1:end,neighbourhood^2/2-0.5));
     
-    im_gaussian_blur = imgaussfilt(repmat(im_in,3,3),2^(levels-l));
-    im_gaussian_blur = im_gaussian_blur(m+[1:m],m+[1:m],:);
+    %only perform blur on lower levels
+    if(l<levels)
+        im_gaussian_blur = imgaussfilt(repmat(im_in,3,3),2^(levels-l-1));
+        im_gaussian_blur = im_gaussian_blur(m+[1:m],m+[1:m],:);
+    else
+        im_gaussian_blur = im_in;
+    end
     
     pixels_gaussian_blur=reshape(im_gaussian_blur,m^2,3);
 
@@ -50,33 +55,32 @@ end
 S=reshape([1 1],[1 1 2]);
 imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
 
-corrections = 3;
+corrections = 1;
 %jitter parameter at each level
-r=[0 0 0 0 0 0];%repmat(0.4,levels,1);
+r=[1 1 1 0.3 0 0];%repmat(0.4,levels,1);
+
+close
+hFig = figure(1);
+set(hFig, 'Position', [0 205 1150 465])
 
 for l=1:levels
-    S
-    subplot(1,2,1)
-    
-    imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
-    
-    S=upsample_s(S,m,l)
-    subplot(1,2,2)
-    imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
-    pause
+    S=upsample_s(S,m,l);
     S=jitter_s(S, m, r(l), l, 7);
+    subplot(1,2,1)
     imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
     title('upsampled and jittered')
-    pause(0.5)
+    %pause(0.5)
     if(l>2)
         for c=1:corrections
             S=correct_s(S,Nexemplar{l},pixels_in,m);
         end
+        subplot(1,2,2)
         imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
         title('corrected')
-        pause(0.5)
+        pause%(0.5)
     end
 end
 %close
 pixels_in=reshape(im_orig,m^2,3);
 imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
+title('final')
