@@ -21,5 +21,4 @@ function S_new = correct_s(S_old, Nexemplar, pixels_in, m)
             S_new(x,y,2)=suby;
         end
     end
-    whos
 end

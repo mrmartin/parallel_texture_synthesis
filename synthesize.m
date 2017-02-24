@@ -1,6 +1,6 @@
 %texture synthesis as per "Parallel Controllable Texture Synthesis"
 % by Lefebvre and Hoppe
-% Section 3.1 - basic scheme
+% Section 3.1 - basic scheme with gaussian stack
 
 %input toroidal texture of 2^l
 im_in = imread('input_texture.png');
@@ -9,13 +9,18 @@ if(round(log2(size(im_in,1)))~=log2(size(im_in,1)) || round(log2(size(im_in,2)))
     disp('error, input texture must be square, of size 2^l')
 end
 
+%perform pixel comparisons in LAB space
+colorTransform = makecform('srgb2lab');
+im_orig = im_in;
+%im_in = applycform(im_in, colorTransform);
+
 %imagesc(repmat(im_in,3,3,1))
 m=size(im_in,1);
 pixels_in=reshape(im_in,m^2,3);
 
 levels = log2(size(im_in,1));
 
-%precompute neighbours into convenient form !!at each level > 2!!
+%precompute neighbours into convenient form at each level > 2
 neighbourhood = 5;
 
 Nexemplar = cell(levels,1);
@@ -47,10 +52,18 @@ imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2
 
 corrections = 3;
 %jitter parameter at each level
-r=[0 0 0 0.05 0 0];%repmat(0.4,levels,1);
+r=[0 0 0 0 0 0];%repmat(0.4,levels,1);
 
 for l=1:levels
-    S=upsample_s(S,m,l);
+    S
+    subplot(1,2,1)
+    
+    imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
+    
+    S=upsample_s(S,m,l)
+    subplot(1,2,2)
+    imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
+    pause
     S=jitter_s(S, m, r(l), l, 7);
     imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
     title('upsampled and jittered')
@@ -65,3 +78,5 @@ for l=1:levels
     end
 end
 %close
+pixels_in=reshape(im_orig,m^2,3);
+imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
