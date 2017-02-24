@@ -55,7 +55,7 @@ end
 S=reshape([1 1],[1 1 2]);
 imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
 
-corrections = 1;
+corrections = 2;
 %jitter parameter at each level
 r=[1 1 1 0.3 0 0];%repmat(0.4,levels,1);
 
@@ -77,7 +77,7 @@ for l=1:levels
         subplot(1,2,2)
         imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
         title('corrected')
-        pause%(0.5)
+        pause(0.5)
     end
 end
 %close
