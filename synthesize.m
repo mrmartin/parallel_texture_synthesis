@@ -28,8 +28,8 @@ for l=3:levels
     range=m/2^l*[(neighbourhood-1)/-2:(neighbourhood-1)/2];
     [X,Y]=meshgrid(range, range);
     %remove self
-    X=X(setdiff(1:end,neighbourhood^2/2-0.5));
-    Y=Y(setdiff(1:end,neighbourhood^2/2-0.5));
+    X=X(setdiff(1:end,neighbourhood^2/2+0.5));
+    Y=Y(setdiff(1:end,neighbourhood^2/2+0.5));
     
     %only perform blur on lower levels
     if(l<levels)
@@ -41,6 +41,7 @@ for l=3:levels
     
     pixels_gaussian_blur=reshape(im_gaussian_blur,m^2,3);
 
+    %prepare the neighbourhood of each pixel on a line
     Nexemplar{l}=zeros(m^2,neighbourhood^2-1,3);
     for x=1:m
         for y=1:m
@@ -55,14 +56,14 @@ end
 S=reshape([1 1],[1 1 2]);
 imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
 
-corrections = 2;
+corrections = 3;
 %jitter parameter at each level
 r=[1 1 1 0.3 0 0];%repmat(0.4,levels,1);
 
 close
 hFig = figure(1);
 set(hFig, 'Position', [0 205 1150 465])
-
+tic
 for l=1:levels
     S=upsample_s(S,m,l);
     S=jitter_s(S, m, r(l), l, 7);
@@ -80,7 +81,9 @@ for l=1:levels
         pause(0.5)
     end
 end
+toc
 %close
 pixels_in=reshape(im_orig,m^2,3);
 imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
 title('final')
+%imwrite(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3),'output_texture.png')
