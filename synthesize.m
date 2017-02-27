@@ -9,6 +9,9 @@ if(round(log2(size(im_in,1)))~=log2(size(im_in,1)) || round(log2(size(im_in,2)))
     disp('error, input texture must be square, of size 2^l')
 end
 
+%is the input toroidal?
+toroidal = false;
+
 %perform pixel comparisons in LAB space
 colorTransform = makecform('srgb2lab');
 im_orig = im_in;
@@ -65,8 +68,8 @@ hFig = figure(1);
 set(hFig, 'Position', [0 205 1150 465])
 tic
 for l=1:levels
-    S=upsample_s(S,m,l);
-    S=jitter_s(S, m, r(l), l, 7);
+    S=upsample_s(S,m,l,toroidal);
+    S=jitter_s(S, m, r(l), l, 7,toroidal);
     subplot(1,2,1)
     imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
     title('upsampled and jittered')
