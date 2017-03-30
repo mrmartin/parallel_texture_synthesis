@@ -88,5 +88,8 @@ toc
 %close
 pixels_in=reshape(im_orig,m^2,3);
 imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
-title('final')
+title('output')
 %imwrite(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3),'output_texture.png')
+subplot(1,2,1)
+imagesc(im_in)
+title('input')
