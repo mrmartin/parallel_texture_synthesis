@@ -41,7 +41,7 @@ else
     %imagesc(repmat(im_in,3,3,1))
     m=size(im_in,1);
 
-    levels = log2(m);
+    input_levels = log2(m);
 
     %precompute neighbours into convenient form at each level > 2
     neighbourhood = 5;
@@ -49,17 +49,17 @@ else
     %extend over edges by flipping. Done instead of repeating because it's not toroidal
     im_extended_flipped=[im_in(end:-1:1,end:-1:1) im_in(end:-1:1,:) im_in(end:-1:1,end:-1:1); im_in(:,end:-1:1) im_in im_in(:,end:-1:1); im_in(end:-1:1,end:-1:1) im_in(end:-1:1,:) im_in(end:-1:1,end:-1:1)];
 
-    Nexemplar = cell(levels,1);
-    for l=2:levels
-        range=m/2^l*[(neighbourhood-1)/-2:(neighbourhood-1)/2];
+    Nexemplar = cell(input_levels,1);
+    for l_out=2:input_levels
+        range=m/2^l_out*[(neighbourhood-1)/-2:(neighbourhood-1)/2];
         [X,Y]=meshgrid(range, range);
         %remove self
         X=X(setdiff(1:end,neighbourhood^2/2+0.5));
         Y=Y(setdiff(1:end,neighbourhood^2/2+0.5));
 
         %perform blur on all levels except last
-        if(l<levels)
-            im_gaussian_blur = imgaussfilt(im_extended_flipped,2^(levels-l-3));
+        if(l_out<input_levels)
+            im_gaussian_blur = imgaussfilt(im_extended_flipped,2^(input_levels-l_out-3));
             im_gaussian_blur = im_gaussian_blur(m+[1:m],m+[1:m]);
         else
             im_gaussian_blur = im_in;
@@ -67,10 +67,10 @@ else
         %subplot(1,4,l-2)
         %imagesc(im_gaussian_blur)
 
-        Nexemplar{l}=zeros(m^2,neighbourhood^2-1);
+        Nexemplar{l_out}=zeros(m^2,neighbourhood^2-1);
         for x=1:m
             for y=1:m
-                Nexemplar{l}(sub2ind([m,m],x,y),:)=im_gaussian_blur(sub2ind([m,m],mod(X+x-1,m)+1,mod(Y+y-1,m)+1));
+                Nexemplar{l_out}(sub2ind([m,m],x,y),:)=im_gaussian_blur(sub2ind([m,m],mod(X+x-1,m)+1,mod(Y+y-1,m)+1));
             end
         end
     end
@@ -87,52 +87,64 @@ view(3)
 title('input')
 
 %%
+%the input and output need not be the same size
+%the scale needs to be the same!
+%The last output level will be the finest input level
+output_size=256;%power of two
+output_levels=log2(output_size);
+
 %S has three dimensions:
 % first and second are output x, y
 % third is (x, y) in input
+random_seed = 2;
+rng(random_seed)
 
-rng(1)
-S=reshape(1+floor(rand(1,2)*64),[1 1 2]);% <--random / deterministic --> S=reshape([16 16],[1 1 2]);
+%if output_levels is less than input_levels, S_1 will be larger than 1
+%if output_levels equals input_levels, S_1 will be [1 x 1 x 2]
+%if otput_levels is more than input levels S_1 will be [1 x 1 x 2], but at a higher scale
+level_difference=max(1,2^(output_levels-input_levels));
+S=reshape(1+floor(rand(level_difference^2,2)*size(im_in,1)),[level_difference level_difference 2])% <--random / deterministic --> S=reshape([16 16],[1 1 2]);
 
 corrections = 3;
 %jitter parameter at each level
-r=[0.2 0 0.2 0.1 0.1 0.1 0.1];%repmat(0.9,levels,1);%zeros(1,6);%[1 1 1 0.3 0 0];%
-random_seed = 2;
+r=repmat(0.2,50,1);%zeros(1,6);%[1 1 1 0.3 0 0];%
 
-for l=1:levels
-    S=upsample_s(S,m,l,true);%toroidal, thanks to flips
-    S=jitter_s(S, m, r(l), l, random_seed, true);%toroidal, thanks to flips
-    if(l>2)%perform corrections on higher levels only
+for l_out=max(1,input_levels-output_levels+1):input_levels
+    S=upsample_s(S,m,l_out,true);%toroidal, thanks to flips
+    S=jitter_s(S, m, r(l_out), l_out, random_seed, true);%toroidal, thanks to flips
+    if(l_out>2)%perform corrections on higher levels only
         for c=1:corrections
-            S=correct_s_one_channel(S,Nexemplar{l},im_in,m);
+            S=correct_s_one_channel(S,Nexemplar{l_out},im_in,m);
         end
         [connected, flow_targets]=watershed_basins(output);
 
         %strategy B
-        if(false && l>3)
+        if(l_out>3)
             depression_pixel=find_inflow_region(flow_targets, size(S,1));%each region id is the index of the lowest pixel
             disp(['there are already ' num2str(length(depression_pixel)) ' pixels which need fixing'])
             counter=0;
             while ~isempty(depression_pixel)
-                S=correct_s_raise_single_pixel(S,Nexemplar{l},im_in,m,depression_pixel(1));
+                S=correct_s_raise_single_pixel(S,Nexemplar{l_out},im_in,m,depression_pixel(1));
                 output=reshape(im_in(sub2ind([m,m],S(:,:,1),S(:,:,2))),size(S,1),size(S,2));
-                flow_targets=find(find_local_minima(output));
+                smaller_and_equal=false;
+                flow_targets=find(find_local_minima(output,smaller_and_equal));
                 depression_pixel=find_inflow_region(flow_targets, size(S,1));
                 counter=counter+1;
             end
             disp(['it turned out to require ' num2str(counter) ' fixes'])
-            [connected, flow_targets]=watershed_basins(output);
-            imagesc(connected)
-            cmap=polcmap;
-            colormap(h,cmap)
+%             [connected, flow_targets]=watershed_basins(output);
+%             imagesc(connected)
+%             cmap=polcmap;
+%             colormap(h,cmap)
         end
     end
-    h=subplot(2,4,l+1);
+    h=subplot(2,4,l_out+1);
     output=reshape(im_in(sub2ind([m,m],S(:,:,1),S(:,:,2))),size(S,1),size(S,2));%index of current output in the input
-    [X Y]=meshgrid(1:size(S,1));
-    surface(X,Y,output,'EdgeColor','none','FaceColor','texturemap')
-    view(3)
+    %[X Y]=meshgrid(1:size(S,1));
+    %surface(X,Y,output,'EdgeColor','none','FaceColor','texturemap')
+    %view(3)
+    imagesc(output)
     %imagesc(reshape(im_in(sub2ind([m,m],S(:,:,1),S(:,:,2))),size(S,1),size(S,2)))
-    title(['output level ' num2str(l)])
+    title(['output level ' num2str(l_out)])
     drawnow
 end
