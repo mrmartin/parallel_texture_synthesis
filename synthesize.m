@@ -49,6 +49,9 @@ for l=3:input_levels
     for x=1:m
         for y=1:m
             Nexemplar{l}(sub2ind([m,m],x,y),:,:)=reshape(pixels_gaussian_blur(sub2ind([m,m],mod(X+x-1,m)+1,mod(Y+y-1,m)+1),:),[1 neighbourhood^2-1 3]);
+            if(max((mod(X+x-1,m)+1)~=(X+x)) || max((mod(Y+y-1,m)+1)~=(Y+y)))
+                Nexemplar{l_out}(sub2ind([m,m],x,y),1)=Inf;%discard those which reach outside the boundary
+            end
         end
     end
 end
@@ -72,7 +75,7 @@ level_difference=max(1,2^(output_levels-input_levels));
 S=reshape(1+floor(rand(level_difference^2,2)*size(im_in,1)),[level_difference level_difference 2])% <--random / deterministic --> S=reshape([16 16],[1 1 2]);
 imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
 
-corrections = 3;
+corrections = 4;
 %jitter parameter at each level
 r=[1 1 1 0.3 0 0];%repmat(0.4,levels,1);
 
