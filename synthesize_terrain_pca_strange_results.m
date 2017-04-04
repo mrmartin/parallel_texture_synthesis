@@ -26,7 +26,7 @@ else
     
 %     [Z, R]=sdtsdemread('exported terrains/DEM_1/1106CEL0.DDF');
 %     Z=Z(61:1388,42:1103);%keep non-NaN region only
-    im_in=Z(round(linspace(1,size(Z,1)-1,512)),round(linspace(1,size(Z,2)-1,512)));
+    im_in=Z(round(linspace(1,size(Z,1)-1,64)),round(linspace(1,size(Z,2)-1,64)));
     
     %get a small subsampled region
     %im_in=Z(1:16:1024,1:16:1024);%im_in(1:16:1024,1:16:1024);
@@ -52,6 +52,8 @@ else
     im_extended_flipped=[im_in(end:-1:1,end:-1:1) im_in(end:-1:1,:) im_in(end:-1:1,end:-1:1); im_in(:,end:-1:1) im_in im_in(:,end:-1:1); im_in(end:-1:1,end:-1:1) im_in(end:-1:1,:) im_in(end:-1:1,end:-1:1)];
 
     gaussian_stack = cell(input_levels,1);
+    pca_coeffs = cell(input_levels,1);
+    means = cell(input_levels,1);
     for l_out=3:input_levels
         range=m/2^l_out*[(neighbourhood-1)/-2:(neighbourhood-1)/2];
         [X,Y]=meshgrid(range, range);
@@ -71,6 +73,7 @@ else
         for x=1:m
             for y=1:m
                 gaussian_stack{l_out}(sub2ind([m,m],x,y),:)=im_gaussian_blur(sub2ind([m,m],mod(X+x-1,m)+1,mod(Y+y-1,m)+1));
+                %gaussian_stack{l_out}(sub2ind([m,m],x,y),:)=gaussian_stack{l_out}(sub2ind([m,m],x,y),:)-im_gaussian_blur(x,y);%normalize by own height
                 if(max((mod(X+x-1,m)+1)~=(X+x)) || max((mod(Y+y-1,m)+1)~=(Y+y))) % discard those which reach outside the boundary
                     gaussian_stack{l_out}(sub2ind([m,m],x,y),1)=Inf;
 %                 else % also remove those which cross the middle, because those are unrealistic flip artefacts
@@ -84,6 +87,11 @@ else
                 end
             end
         end
+        usable=gaussian_stack{l_out}(:,1)~=Inf;
+        pca_coeffs{l_out}=pca(gaussian_stack{l_out}(usable,:));
+        pca_coeffs{l_out}=pca_coeffs{l_out}(:,1:10);%use first five only
+        means{l_out}=mean(gaussian_stack{l_out}(usable,:));
+        gaussian_stack{l_out}=(gaussian_stack{l_out}-repmat(means{l_out},size(gaussian_stack{l_out},1),1))*pca_coeffs{l_out};
     end
     
     save mountains_64_pca
@@ -101,7 +109,7 @@ title('input')
 %the input and output need not be the same size
 %the scale needs to be the same!
 %The last output level will be the finest input level
-output_size=1024;%power of two
+output_size=128 ;%power of two
 output_levels=log2(output_size);
 
 %S has three dimensions:
@@ -118,14 +126,14 @@ S=reshape(1+floor(rand(level_difference^2,2)*size(im_in,1)),[level_difference le
 
 corrections = 3;
 %jitter parameter at each level
-r=repmat(0.4,50,1);%zeros(1,6);%[1 1 1 0.3 0 0];%
+r=repmat(0.2,50,1);%zeros(1,6);%[1 1 1 0.3 0 0];%
 
 for l_out=max(1,input_levels-output_levels+1):input_levels
     S=upsample_s(S,m,l_out,false);%not toroidal
     S=jitter_s(S, m, r(l_out), l_out, random_seed, false);%not toroidal
     if(l_out>2)%perform corrections on higher levels only
         for c=1:corrections
-            S=correct_s_pca(S,gaussian_stack{l_out},im_in(:),m,1);%requires edit for more than 1 image channels
+            S=correct_s_pca_strange_results(S,gaussian_stack{l_out},im_in(:),pca_coeffs{l_out},means{l_out},m,1);%requires edit for more than 1 image channels
         end
         [connected, flow_targets]=watershed_basins(output);
 
@@ -158,4 +166,5 @@ for l_out=max(1,input_levels-output_levels+1):input_levels
     %imagesc(reshape(im_in(sub2ind([m,m],S(:,:,1),S(:,:,2))),size(S,1),size(S,2)))
     title(['output level ' num2str(l_out)])
     drawnow
+    pause
 end

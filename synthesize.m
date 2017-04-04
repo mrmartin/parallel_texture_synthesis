@@ -3,7 +3,7 @@
 % Section 3.1 - basic scheme with gaussian stack
 
 %input toroidal texture of 2^l
-im_in = imread('input_texture.png');
+%im_in = imread('input_texture.png');
 
 if(round(log2(size(im_in,1)))~=log2(size(im_in,1)) || round(log2(size(im_in,2)))~=log2(size(im_in,1)))
     disp('error, input texture must be square, of size 2^l')
