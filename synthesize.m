@@ -3,7 +3,12 @@
 % Section 3.1 - basic scheme with gaussian stack
 
 %input toroidal texture of 2^l
-im_in = imread('input_texture.png');
+%im_in = imread('input_texture.png');
+
+load('mountains_with_precomputed_flow_vectors')
+im_in(:,:,1)=Z/max(Z(:));
+im_in(:,:,2)=reshape(directions(:,1),128,128)/max(directions(:,1));
+im_in(:,:,3)=reshape(directions(:,2),128,128)/max(directions(:,2));
 
 if(round(log2(size(im_in,1)))~=log2(size(im_in,1)) || round(log2(size(im_in,2)))~=log2(size(im_in,1)))
     disp('error, input texture must be square, of size 2^l')
@@ -50,7 +55,10 @@ for l=3:input_levels
         for y=1:m
             Nexemplar{l}(sub2ind([m,m],x,y),:,:)=reshape(pixels_gaussian_blur(sub2ind([m,m],mod(X+x-1,m)+1,mod(Y+y-1,m)+1),:),[1 neighbourhood^2-1 3]);
             if(max((mod(X+x-1,m)+1)~=(X+x)) || max((mod(Y+y-1,m)+1)~=(Y+y)))
-                Nexemplar{l_out}(sub2ind([m,m],x,y),1)=Inf;%discard those which reach outside the boundary
+                Nexemplar{l}(sub2ind([m,m],x,y),1)=Inf;%discard those which reach outside the boundary
+            end
+            if(any(x==depressions(:,1) & y==depressions(:,2)))
+                Nexemplar{l}(sub2ind([m,m],x,y),1)=Inf;%discard depressions
             end
         end
     end
