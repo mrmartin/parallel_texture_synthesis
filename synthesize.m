@@ -85,7 +85,7 @@ imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2
 
 corrections = 4;
 %jitter parameter at each level
-r=[1 1 1 0.3 0 0];%repmat(0.4,levels,1);
+r=[1 1 1 0.3 0 0 0];%repmat(0.4,levels,1);
 
 close
 hFig = figure(1);
