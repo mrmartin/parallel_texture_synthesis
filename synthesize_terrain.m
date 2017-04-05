@@ -2,8 +2,12 @@
 % by Lefebvre and Hoppe
 % Section 3.1 - basic scheme with gaussian stack
 
-%input toroidal texture of 2^l
-im_in = imread('input_texture.png');
+preprocess_terrain_flow
+
+load('mountains_with_precomputed_flow_vectors')
+im_in(:,:,1)=Z/max(Z(:));
+im_in(:,:,2)=reshape(directions(:,1),128,128)/max(directions(:,1));
+im_in(:,:,3)=reshape(directions(:,2),128,128)/max(directions(:,2));
 
 if(round(log2(size(im_in,1)))~=log2(size(im_in,1)) || round(log2(size(im_in,2)))~=log2(size(im_in,1)))
     disp('error, input texture must be square, of size 2^l')
@@ -78,10 +82,11 @@ level_difference=max(1,2^(output_levels-input_levels));
 S=reshape(1+floor(rand(level_difference^2,2)*size(im_in,1)),[level_difference level_difference 2])% <--random / deterministic --> S=reshape([16 16],[1 1 2]);
 imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
 
-corrections = 3;
+corrections = 4;
 %jitter parameter at each level
 r=[1 1 1 0.3 0 0 0];%repmat(0.4,levels,1);
 
+pixels_in=reshape(im_orig,m^2,3);
 close
 hFig = figure(1);
 set(hFig, 'Position', [0 205 1150 465])
@@ -89,23 +94,23 @@ tic
 for l_out=max(1,input_levels-output_levels+1):input_levels
     S=upsample_s(S,m,l_out,toroidal);
     S=jitter_s(S, m, r(l_out), l_out, random_seed, toroidal);
-    subplot(1,2,1)
-    imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
-    title('upsampled and jittered')
     %pause(0.5)
     if(l_out>2)
         for c=1:corrections
             S=correct_s(S,Nexemplar{l_out},pixels_in,m);
         end
-        subplot(1,2,2)
-        imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
-        title('corrected')
-        pause(0.5)
     end
+    output=reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3);
+    subplot(1,3,1)
+    imagesc(-1*output(:,:,1))
+    subplot(1,3,2)
+    imagesc(output(:,:,2))
+    title(['ouptut at level ' num2str(l_out)])
+    subplot(1,3,3)
+    imagesc(output(:,:,3))
+    pause(0.3)%better than drawnow
 end
 toc
-%close
-pixels_in=reshape(im_orig,m^2,3);
-imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
+subplot(1,3,2)
 title('final')
 %imwrite(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3),'output_texture.png')
