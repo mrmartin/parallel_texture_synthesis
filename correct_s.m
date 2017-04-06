@@ -10,10 +10,10 @@ function S_new = correct_s(S_old, Nexemplar, pixels_in, m, candidates, neighbour
     range=[(candidate_neighbourhood-1)/-2:(candidate_neighbourhood-1)/2];
     [cX,cY]=meshgrid(range, range);%do not remove self
 
+    S_x=S_old(:,:,1);
+    S_y=S_old(:,:,2);
     function i = correct_one_pixel(x, y)
         pixels_in_S_old = sub2ind([size(S_old,1) size(S_old,2)],mod(X+x-1,size(S_old,1))+1,mod(Y+y-1,size(S_old,2))+1);
-        S_x=S_old(:,:,1);
-        S_y=S_old(:,:,2);
         neighbours = pixels_in(sub2ind([m,m],S_x(pixels_in_S_old),S_y(pixels_in_S_old)),:);
         %match against all pixels
         %[~,i]=min(sum(sum(abs(Nexemplar-repmat(reshape(double(neighbours),[1 neighbourhood^2-1 3]),[m^2,1,1])),3),2));

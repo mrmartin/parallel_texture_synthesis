@@ -23,12 +23,12 @@ colorTransform = makecform('srgb2lab');
 im_orig = im_in;
 im_in = applycform(im_in, colorTransform);
 
-%[Nexemplar, candidates, pixels_in, m, input_levels] = preprocess_texture(im_in, neighbourhood, k_candidates);
+[Nexemplar, candidates, pixels_in, m, input_levels] = preprocess_texture(im_in, neighbourhood, k_candidates);
 
 %the input and output need not be the same size
 %the scale needs to be the same!
 %The last output level will be the finest input level
-output_size=128;%power of two
+output_size=256;%power of two
 output_levels=log2(output_size);
 
 %S has three dimensions:
@@ -41,12 +41,12 @@ rng(random_seed)
 %if output_levels equals input_levels, S_1 will be [1 x 1 x 2]
 %if otput_levels is more than input levels S_1 will be [1 x 1 x 2], but at a higher scale
 level_difference=max(1,2^(output_levels-input_levels));
-S=reshape(1+floor(rand(level_difference^2,2)*size(im_in,1)),[level_difference level_difference 2])% <--random / deterministic --> S=reshape([16 16],[1 1 2]);
+S=reshape(1+floor(rand(level_difference^2,2)*size(im_in,1)),[level_difference level_difference 2]);% <--random / deterministic --> S=reshape([16 16],[1 1 2]);
 imagesc(reshape(pixels_in(sub2ind([m,m],S(:,:,1),S(:,:,2)),:),size(S,1),size(S,2),3))
 
-corrections = [0 0 9 6 3 1];%tune the number of correction passes per level, for speed and quality
+corrections = [0 0 9 6 3 3];%tune the number of correction passes per level, for speed and quality
 %jitter parameter at each level
-r=[1 1 1 0.3 0 0 0];%repmat(0.4,levels,1);
+r=repmat(0.5,input_levels,1);
 
 close
 hFig = figure(1);
