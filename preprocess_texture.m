@@ -1,4 +1,4 @@
-function [Nexemplar, candidates, pixels_in, m, input_levels] = preprocess_texture(im_in, neighbourhood, k_candidates);
+function [Nexemplar, candidates, pixels_in, m, input_levels] = preprocess_texture(im_in, neighbourhood, k_candidates, forbidden)
     %imagesc(repmat(im_in,3,3,1))
     m=size(im_in,1);
     pixels_in=reshape(im_in,m^2,3);
@@ -35,6 +35,9 @@ function [Nexemplar, candidates, pixels_in, m, input_levels] = preprocess_textur
                 Nexemplar{l}(sub2ind([m,m],x,y),:,:)=reshape(pixels_gaussian_blur(sub2ind([m,m],mod(X+x-1,m)+1,mod(Y+y-1,m)+1),:),[1 neighbourhood^2-1 3]);
                 if(max((mod(X+x-1,m)+1)~=(X+x)) || max((mod(Y+y-1,m)+1)~=(Y+y)))
                     Nexemplar{l}(sub2ind([m,m],x,y),1)=Inf;%discard those which reach outside the boundary
+                end                
+                if(any(x==forbidden(:,1) & y==forbidden(:,2)))
+                    Nexemplar{l}(sub2ind([m,m],x,y),1)=Inf;%discard depressions
                 end
             end
         end

@@ -2,6 +2,8 @@
 % by Lefebvre and Hoppe
 % Section 3.1 - basic scheme with gaussian stack
 
+gcp %initialize parallel processing
+
 %input toroidal texture of 2^l
 im_in = imread('input_texture.png');
 
@@ -23,12 +25,12 @@ colorTransform = makecform('srgb2lab');
 im_orig = im_in;
 im_in = applycform(im_in, colorTransform);
 
-[Nexemplar, candidates, pixels_in, m, input_levels] = preprocess_texture(im_in, neighbourhood, k_candidates);
+[Nexemplar, candidates, pixels_in, m, input_levels] = preprocess_texture(im_in, neighbourhood, k_candidates, [0 0]);
 
 %the input and output need not be the same size
 %the scale needs to be the same!
 %The last output level will be the finest input level
-output_size=256;%power of two
+output_size=128;%power of two
 output_levels=log2(output_size);
 
 %S has three dimensions:
