@@ -10,4 +10,6 @@ Output:
 
 Implements the 2005 paper by Lefebvre and Hoppe (Lefebvre, Sylvain, and Hugues Hoppe. "Parallel controllable texture synthesis." ACM Transactions on Graphics (ToG). Vol. 24. No. 3. ACM, 2005.) in Matlab. 
 
-Includes the Gaussian Stack approach of section 3.1, without acceleration and optimisation.
+Includes the Gaussian Stack approach of section 3.1, including the bells and whistles of coherent synthesis and k-coherent search.
+
+No parallelism or optimisation.
