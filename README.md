@@ -12,4 +12,4 @@ Implements the 2005 paper by Lefebvre and Hoppe (Lefebvre, Sylvain, and Hugues H
 
 Includes the Gaussian Stack approach of section 3.1, including the bells and whistles of coherent synthesis and k-coherent search.
 
-No parallelism or optimisation.
+Includes some basic CPU parallelism

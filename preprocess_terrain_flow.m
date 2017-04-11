@@ -7,7 +7,21 @@ low=extremes(1);
 high=extremes(2);
 raw=reshape(raw,1025,1025);
 Z=low+(raw*(high-low)/max(raw(:)));
-Z=Z(1:4:1024,1:4:1024);
+Z=Z(1:2:1024,1:2:1024);
+
+%% load another terrain, yosemite
+% [Z, R]=sdtsdemread('exported terrains/DEM_1/1106CEL0.DDF');
+% Z=Z(61:1388,42:1103);
+% Z=Z(round(linspace(1,size(Z,1),128)),round(linspace(1,size(Z,2),128)));
+
+%% find best blur level
+% for i=linspace(0.5,5,1000)
+%     tmp=find_local_minima(imgaussfilt(Z,i),true,0);disp([num2str(i) ' - ' num2str(length(find(tmp(2:end-1,2:end-1))))])
+% end
+
+%% smooth the image
+Z_orig=Z;
+Z=imgaussfilt(Z,3.5);
 
 %% Brute force rain flow simulation
 close
@@ -15,7 +29,7 @@ close
 rain=ones(size(Z));
 flow=rain;
 inflow=zeros(size(Z));
-for i=1:20
+for i=1:100
     depressions=[];
     flow_tmp=zeros(size(Z));
     for x=1:size(Z,1)
@@ -71,6 +85,8 @@ for i=1:20
         end
     end
     flow=flow_tmp;
+    imagesc(-1*flow)
+    pause(0.2)
     inflow=inflow+flow;
 end
 
@@ -81,7 +97,19 @@ close
 
 subplot(1,3,1)
 imagesc(Z(end:-1:1,:))
-title('height')
+title('height, showing forbidden pixels')
+%plot pixels which don't have a neighbour with more water
+% [x y]=ind2sub([imsize imsize],find(find_local_minima(-1*inflow,true,0.03)));
+
+% find pixels from which water does not flow out of the terrain
+[colors, outflow]=watershed_basins(Z);%perform with a smoothed image
+inflow_regions=find_inflow_region(outflow,imsize);
+[x y]=ind2sub([imsize imsize],find(ismember(colors,inflow_regions)));
+
+hold on
+plot(y,imsize-x+1,'rx')
+depressions=[x y];
+pause(1)
 % given rainflow on the terrain, we wish to calculate:
 %   1)how much water does a pixel receive
 inflow=log2(inflow+1);
@@ -106,8 +134,10 @@ title('outflow')
 %   2)where does this water go, using gradient on terrain
 % assume uniformly distributed rainfall, and handle local depressions
 % pixels which cannot be used, because they are local depressions
-depressions'
+%depressions'
+pause(0.2)%drawnow
 
 %% save
+Z = Z_orig;
 clearvars -except depressions directions Z
 save('mountains_with_precomputed_flow_vectors')
